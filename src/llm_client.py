@@ -81,11 +81,70 @@ def call_llm(system: str, user: str) -> str:
         APIResponseError: Bad HF response.
         OllamaConnectionError: Local Ollama unreachable.
     """
+    # ── Mock mode for screenshot / demo purposes ─────────────────────
+    if os.environ.get("BOOKBUDDY_MOCK_MODE", "").lower() in ("1", "true", "yes"):
+        return _mock_llm_response(system, user)
+
     backend: str = st.session_state.get("backend", "huggingface")
 
     if backend == "ollama":
         return _call_ollama(system, user)
     return _call_huggingface(system, user)
+
+
+# ── Mock mode (for screenshots / demos without API keys) ────────────
+
+_MOCK_READER_DNA = (
+    "You are drawn to sprawling, thought-provoking epics that blend "
+    "philosophical depth with vivid world-building — think Tolkien's "
+    "mythic landscapes, Frank Herbert's layered politics, and "
+    "Roberto Bolaño's labyrinthine narratives. Your shelf reveals a "
+    "reader who craves intellectual challenge: you reach for Russian "
+    "masters like Dostoyevsky and Tolstoy to wrestle with questions "
+    "of morality, free will, and the human condition. At the same "
+    "time, you have a soft spot for razor-sharp satire — Vonnegut, "
+    "Heller, and Pratchett appear frequently — suggesting you value "
+    "wit and irony as much as gravitas. You seem to seek books that "
+    "*stay* with you, books that demand re-reading, marginalia, and "
+    "late-night introspection. The pattern is clear: you don't just "
+    "read to escape; you read to understand."
+)
+
+_MOCK_RECOMMENDATIONS = (
+    "**1. The Dispossessed by Ursula K. Le Guin**\n"
+    "Like Dostoyevsky and Tolstoy, Le Guin uses speculative fiction to ask "
+    "deep moral questions — this anarchist utopia-vs-dystopia novel is a "
+    "perfect companion to your shelf of philosophical epics.\n\n"
+    "**2. The Master and Margarita by Mikhail Bulgakov**\n"
+    "You clearly enjoy Russian literature that blends the profound with "
+    "the absurd. Bulgakov's devil-visits-Moscow satire matches your "
+    "Vonnegut-and-Heller wit while delivering the philosophical weight you love.\n\n"
+    "**3. Cloud Atlas by David Mitchell**\n"
+    "Your pattern of ambitious, genre-blending epics (Dune, Bolaño, "
+    "Tolkien) points you straight to Mitchell's nested-story masterpiece "
+    "that spans centuries and genres in a single, intricate narrative.\n\n"
+    "**4. The Name of the Rose by Umberto Eco**\n"
+    "You gravitate toward books that function as intellectual puzzles — "
+    "Eco's medieval monastery murder mystery wrapped in semiotics, "
+    "theology, and labyrinthine libraries reads like a cross between "
+    "Tolkien's layered world-building and Bolaño's structural complexity.\n\n"
+    "**5. American Gods by Neil Gaiman**\n"
+    "Your love for mythic landscapes (Tolkien) combined with sharp modern "
+    "sensibility (Pratchett) makes Gaiman's dark, sprawling road-trip "
+    "across mythological America a natural fit — it's epic yet irreverent, "
+    "ancient yet contemporary."
+)
+
+
+def _mock_llm_response(system: str, user: str) -> str:
+    """Return canned AI responses when ``BOOKBUDDY_MOCK_MODE`` is set.
+
+    Used for README screenshots and demo videos without a live API key.
+    """
+    combined = (system + " " + user).lower()
+    if "recommend" in combined:
+        return _MOCK_RECOMMENDATIONS
+    return _MOCK_READER_DNA
 
 
 # ── HuggingFace path ─────────────────────────────────────────────────

@@ -7,40 +7,65 @@ Upload your Goodreads library export and BookBuddy will:
 - 🧬 **Generate your Reader DNA** — a 150-word AI profile of your reading personality
 - 📖 **Recommend 5 new books** — tailored to your specific taste, with personalized explanations
 
+<p align="center">
+  <img src="docs/screenshots/tab1-stats.png" alt="BookBuddy Stats tab" width="49%">
+  <img src="docs/screenshots/tab2-dna.png" alt="BookBuddy Reader DNA tab" width="49%">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/tab3-recs.png" alt="BookBuddy Recommendations tab" width="49%">
+  <img src="docs/screenshots/sidebar.png" alt="BookBuddy sidebar" width="49%">
+</p>
+
 ---
 
 ## 🚀 Quick Start
 
-### 1. Install dependencies
+### 1. Export your Goodreads library
+1. Log into [Goodreads](https://www.goodreads.com)
+2. Go to **My Books** (the "Browse" dropdown → "My Books" in the old nav, or the My Books tab)
+3. Find the **Tools** panel on the left sidebar → click **Import/Export**
+4. Click **Export Library** — Goodreads will prepare a CSV and email you a download link within a few minutes
+5. Download the CSV file (usually named `goodreads_library_export.csv`)
+
+> 📝 **Note:** If the Import/Export link is not visible, go directly to:  
+> `https://www.goodreads.com/review/import`
+
+### 2. Install dependencies
 ```bash
+git clone https://github.com/SubhajitG87/BookBuddy.git
+cd BookBuddy
+python -m venv .venv && source .venv/bin/activate   # or `uv venv`
 pip install -r requirements.txt
 ```
 
-### 2. Get a HuggingFace token (free)
-Visit [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) and create a free token.
+### 3. Get a HuggingFace token (free — takes 30 seconds)
+Visit [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) → click **Create new token** → choose *Read* scope → copy the `hf_...` string.
 
-### 3. Configure your token
+> 💡 **No credit card, no paid plan.** The HuggingFace Inference API *free tier* is sufficient for BookBuddy's short prompts.
+
+### 4. Configure
 ```bash
 cp .env.example .env
-# Edit .env and paste your token:
-# HF_TOKEN=hf_yourActualTokenHere
+# Open .env and paste your token:
+#   HF_TOKEN=hf_yourActualTokenHere
 ```
 
-### 4. Run the app
+### 5. Launch
 ```bash
 streamlit run app.py
 ```
 
-### 5. Export your Goodreads library
-Go to Goodreads → **My Books** → **Import/Export** → **Export Library** → download the CSV.
-
-Upload it in the sidebar and BookBuddy does the rest.
+Open `http://localhost:8501`, upload your Goodreads CSV in the sidebar, and explore your stats. Click **Generate My Reader DNA** — in ~10 seconds you'll have your literary profile. Then hop to the Recommendations tab for personalized picks.
 
 ---
 
 ## 🤖 AI Backend
 
-BookBuddy uses the **HuggingFace Inference API free tier** — no paid subscription needed. Select from three free models in the sidebar:
+BookBuddy offers **two** inference backends (choose in sidebar):
+
+### ☁️ Option A — HuggingFace Inference API (default)
+Free-tier models — select in the sidebar. No GPU, no downloads, no cost:
 
 | Model | Description |
 |-------|-------------|
@@ -49,6 +74,31 @@ BookBuddy uses the **HuggingFace Inference API free tier** — no paid subscript
 | **Gemma-2-9B** | Google's lightweight model |
 
 > ⚡ **Runs free on the HuggingFace Inference API free tier.** Only a `HF_TOKEN` is required (free to create).
+
+### 🖥️ Option B — Ollama (fully offline)
+Run completely on your machine — zero external API calls, zero cost, total privacy:
+
+```bash
+# Install Ollama (macOS/Linux/Windows): https://ollama.com
+ollama pull mistral     # 4.1 GB one-time download
+pip install ollama      # Python client library
+```
+
+Then switch the sidebar radio to **Ollama** and select `Mistral (local)`. The app detects whether `ollama` is installed and guides you if it isn't.
+
+> 🔒 **Runs fully offline with Ollama.** No internet needed after the initial model pull.
+
+---
+
+## 🌐 Deploy on the Web (free)
+
+You can run BookBuddy in your browser — no local setup needed:
+
+**[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://bookbuddy.streamlit.app)**
+&nbsp;&nbsp;&nbsp;
+**[![Open in HuggingFace Spaces](https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-sm.svg)](https://huggingface.co/spaces/SubhajitG87/BookBuddy)**
+
+Both deployments use the HuggingFace Inference API free tier. Upload your CSV, choose a model, and get your Reader DNA — all from your browser.
 
 ---
 
@@ -83,31 +133,41 @@ Uses your Reader DNA + full reading history to recommend 5 books you haven't rea
 
 ```
 BookBuddy/
-├── app.py                 # Streamlit entry point
-├── requirements.txt       # Python dependencies
+├── app.py                 # Streamlit entry point (tabs, sidebar, orchestration)
+├── requirements.txt       # Python dependencies (all MIT/Apache-2.0)
+├── pyproject.toml         # Project metadata & build config
+├── Makefile               # Dev shortcuts: lint, test, screenshots
 ├── .env.example           # HF_TOKEN template
 ├── README.md
-├── .gitignore
+├── LICENSE                # MIT License
+├── docs/
+│   └── screenshots/       # README screenshots & sample CSV
+├── scripts/
+│   └── capture_screenshots.py  # Playwright screenshot automation
 └── src/
     ├── __init__.py
-    ├── llm_client.py      # HuggingFace Inference API abstraction
-    ├── data_processor.py  # CSV parsing, stats, genre inference
-    ├── charts.py          # Plotly visualizations (Goodreads+Claude theme)
-    ├── prompts.py         # AI prompt templates
-    └── ui_components.py   # Styled cards, sidebar, Markdown export
+    ├── llm_client.py      # HF Inference API + Ollama abstraction
+    ├── data_processor.py  # CSV parsing, stats computation, genre inference
+    ├── charts.py          # Plotly visualizations (Goodreads dark theme)
+    ├── prompts.py         # AI prompt templates (Reader DNA + Recommendations)
+    ├── ui_components.py   # Styled cards, sidebar builder, Markdown export
+    ├── exceptions.py      # Custom exception hierarchy
+    ├── types.py           # TypedDict data structures
+    └── logging_config.py  # Structured logging setup
 ```
 
 ---
 
 ## 📦 Dependencies
 
-| Package | License |
-|---------|---------|
-| streamlit | Apache 2.0 |
-| pandas | BSD 3-Clause |
-| plotly | MIT |
-| huggingface_hub | MIT |
-| python-dotenv | MIT |
+| Package | Purpose | License |
+|---------|---------|---------|
+| streamlit | Web UI framework | Apache 2.0 |
+| pandas | CSV parsing & data wrangling | BSD 3-Clause |
+| plotly | Interactive charts (bar, pie, histogram) | MIT |
+| huggingface_hub | HuggingFace Inference API client | MIT |
+| ollama (optional) | Local LLM client for offline mode | MIT |
+| python-dotenv | `.env` file parsing | MIT |
 
 All dependencies are MIT or Apache 2.0 licensed.
 
@@ -116,8 +176,15 @@ All dependencies are MIT or Apache 2.0 licensed.
 ## 🔧 Requirements
 
 - Python 3.10+
-- HuggingFace API token (free tier)
-- Goodreads CSV export
+- HuggingFace API token (free tier) — for Option A
+- Or [Ollama](https://ollama.com) installed locally — for Option B
+- Goodreads CSV export (see Quick Start step 1)
+
+---
+
+## 📝 License
+
+MIT © 2026 Subhajit Ganguly — use freely, modify, and share.
 
 ---
 
